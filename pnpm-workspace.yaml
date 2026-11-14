@@ -1,0 +1,8 @@
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+ignoredBuiltDependencies:
+  - electron-winstaller
+minimumReleaseAgeExclude:
+  - electron@39.8.10
+  - lucide-react@1.73.0

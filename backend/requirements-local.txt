@@ -1,0 +1,8 @@
+# Optional local diffusion runtime. The in-app installer picks the CUDA/CPU
+# pyTorch wheel index automatically, so this file is mainly for manual setups.
+torch>=2.6
+torchvision>=0.21
+diffusers>=0.31
+transformers>=4.44
+accelerate>=1.0
+safetensors>=0.4

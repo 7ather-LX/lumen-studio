@@ -1,0 +1,125 @@
+{
+  "name": "lumen-studio",
+  "productName": "Lumen Studio",
+  "version": "0.1.0",
+  "description": "Local-first AI image studio with pluggable local and cloud engines, feedback learning and image analysis.",
+  "main": "electron/main.cjs",
+  "author": {
+    "name": "Lumen Studio contributors",
+    "email": "hello@lumen.local"
+  },
+  "license": "MIT",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/7ather-LX/lumen-studio.git"
+  },
+  "keywords": [
+    "ai",
+    "image-generation",
+    "stable-diffusion",
+    "comfyui",
+    "diffusers",
+    "electron",
+    "local-first"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n VITE,APP -c cyan,magenta \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "dev:web": "vite --host 127.0.0.1",
+    "backend:dev": ".venv\\Scripts\\python.exe -m uvicorn backend.asgi:app --host 127.0.0.1 --port 8765",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "build:runtime": "node scripts/build-backend.mjs",
+    "dist": "npm run build && npm run build:runtime && electron-builder --win nsis",
+    "dist:dir": "npm run build && npm run build:runtime && electron-builder --win --dir",
+    "test:backend": "node scripts/run-backend-tests.mjs",
+    "test": "npm run test:backend && npm run typecheck",
+    "smoke": "node scripts/ui-smoke.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "1.73.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "concurrently": "10.0.7",
+    "electron": "39.8.10",
+    "electron-builder": "26.18.0",
+    "playwright-core": "^1.65.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "wait-on": "9.5.1"
+  },
+  "build": {
+    "appId": "studio.lumen.app",
+    "productName": "Lumen Studio",
+    "copyright": "Copyright © 2026 Lumen Studio contributors",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "build/python",
+        "to": "python",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!tests/**"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Lumen-Studio-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Lumen Studio",
+      "uninstallDisplayName": "Lumen Studio",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "releaseType": "release"
+      }
+    ]
+  }
+}

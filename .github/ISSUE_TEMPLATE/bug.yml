@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible problem
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先确认你使用的是最新 Release，并附上日志与硬件信息。
+        日志位置：`%APPDATA%\Lumen Studio\logs\backend.log`
+  - type: input
+    id: version
+    attributes:
+      label: Lumen Studio version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU / VRAM
+      placeholder: RTX 4070 SUPER 12 GB, 2 GB free
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Engine
+      options:
+        - Local Diffusers
+        - ComfyUI
+        - OpenAI
+        - Stability
+        - Demo
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I removed API keys and private prompts from logs.
+          required: true
