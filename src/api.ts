@@ -1,4 +1,5 @@
 import type {
+  AssistantConfig,
   GeneratePayload,
   Insights,
   Job,
@@ -195,6 +196,27 @@ class StudioApi {
     return this.request<{ prompt: string; added_style: boolean; learned_tokens: string[]; learned_negative: string[] }>(
       "/api/prompt/enhance",
       { method: "POST", body: JSON.stringify({ prompt, style, enhance: true }) },
+    );
+  }
+
+  assistant() {
+    return this.request<AssistantConfig>("/api/assistant");
+  }
+
+  updateAssistant(payload: Partial<AssistantConfig> & { api_key?: string; clear_key?: boolean }) {
+    return this.request<AssistantConfig>("/api/assistant", { method: "PUT", body: JSON.stringify(payload) });
+  }
+
+  testAssistant() {
+    return this.request<{ ok: boolean; message: string; detail?: string; models: string[] }>("/api/assistant/test", {
+      method: "POST",
+    });
+  }
+
+  assistantEnhance(prompt: string, style: string, mode = "txt2img") {
+    return this.request<{ prompt: string; negative_prompt: string; raw: string; model: string; style: string }>(
+      "/api/assistant/enhance",
+      { method: "POST", body: JSON.stringify({ prompt, style, mode }) },
     );
   }
 

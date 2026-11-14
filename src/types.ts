@@ -226,6 +226,7 @@ export interface GeneratePayload {
   init_image_id?: string;
   auto_tune: boolean;
   enhance_prompt: boolean;
+  cel_shading?: boolean;
 }
 
 export interface SubmitResponse {
@@ -376,9 +377,19 @@ export interface Settings {
     hf_endpoint: string;
     local_files_only: boolean;
   };
+  assistant?: AssistantConfig;
   comfyui: { timeout: number; sampler: string; scheduler: string };
   privacy: { strip_png_metadata: boolean; keep_init_uploads: boolean };
   ui: { reduce_motion: boolean; gallery_columns: number };
+}
+
+export interface AssistantConfig {
+  enabled: boolean;
+  base_url: string;
+  model: string;
+  timeout: number;
+  has_key: boolean;
+  key_masked: string;
 }
 
 export interface UpdateEvent {

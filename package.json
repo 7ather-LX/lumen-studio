@@ -1,7 +1,7 @@
 {
   "name": "lumen-studio",
   "productName": "Lumen Studio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local-first AI image studio with pluggable local and cloud engines, feedback learning and image analysis.",
   "main": "electron/main.cjs",
   "author": {
@@ -87,6 +87,10 @@
           "!**/*.pyc",
           "!tests/**"
         ]
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
       }
     ],
     "win": {

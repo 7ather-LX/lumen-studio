@@ -161,3 +161,26 @@ def safe_float(value: Any, fallback: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return fallback
+
+
+def cel_shading_enhance(image: Image.Image) -> Image.Image:
+    """A conservative posterize + ink-edge pass for cel-shaded illustration.
+
+    This is intentionally optional: it can flatten gradients and is not a
+    replacement for an anime-specific checkpoint.
+    """
+
+    from PIL import ImageEnhance, ImageFilter, ImageOps
+
+    rgb = image.convert("RGB")
+    flat = ImageOps.posterize(rgb, 5)
+    edges = (
+        rgb.convert("L")
+        .filter(ImageFilter.GaussianBlur(0.7))
+        .filter(ImageFilter.FIND_EDGES)
+        .point(lambda value: int(min(150, value * 1.4)) if value > 46 else 0)
+    )
+    ink = Image.new("RGB", rgb.size, (30, 26, 34))
+    mask = edges.filter(ImageFilter.GaussianBlur(0.45)).point(lambda value: int(value * 0.42))
+    composited = Image.composite(ink, flat, mask)
+    return ImageEnhance.Color(composited).enhance(1.06)

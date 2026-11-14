@@ -12,12 +12,13 @@ import {
   Save,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { Field, Toggle } from "../components/Controls";
 import { useStudio } from "../state/StudioContext";
-import type { Settings, UpdateEvent } from "../types";
+import type { AssistantConfig, Settings, UpdateEvent } from "../types";
 
 export function SettingsPage() {
   const { config, settings, providers, runtime, refreshSettings, notify, fail } = useStudio();
@@ -27,11 +28,23 @@ export function SettingsPage() {
   const [restarting, setRestarting] = useState(false);
   const [updateEvent, setUpdateEvent] = useState<UpdateEvent | null>(null);
   const [updateBusy, setUpdateBusy] = useState(false);
+  const [assistant, setAssistant] = useState<AssistantConfig | null>(null);
+  const [assistantKey, setAssistantKey] = useState("");
+  const [assistantBusy, setAssistantBusy] = useState(false);
+  const [assistantStatus, setAssistantStatus] = useState("");
 
   useEffect(() => {
     if (!window.lumen) return;
     return window.lumen.onUpdateStatus(setUpdateEvent);
   }, []);
+
+  useEffect(() => {
+    void api
+      .assistant()
+      .then(setAssistant)
+      .catch(() => setAssistant(null));
+  }, []);
+
 
   useEffect(() => {
     if (settings && (!form || !dirty)) setForm(settings);
@@ -45,6 +58,50 @@ export function SettingsPage() {
   const updateLocal = (patch: Partial<Settings["local_engine"]>) => {
     if (!form) return;
     update({ local_engine: { ...form.local_engine, ...patch } });
+  };
+
+  const updateAssistant = (patch: Partial<AssistantConfig>) => {
+    setAssistant((current) => (current ? { ...current, ...patch } : current));
+  };
+
+  const saveAssistant = async () => {
+    if (!assistant) return;
+    setAssistantBusy(true);
+    try {
+      const next = await api.updateAssistant({
+        enabled: assistant.enabled,
+        base_url: assistant.base_url,
+        model: assistant.model,
+        timeout: assistant.timeout,
+        api_key: assistantKey.trim() || undefined,
+      });
+      setAssistant(next);
+      setAssistantKey("");
+      await refreshSettings();
+      notify("提示词助手配置已保存");
+    } catch (error) {
+      fail(error, "保存提示词助手失败");
+    } finally {
+      setAssistantBusy(false);
+    }
+  };
+
+  const testAssistant = async () => {
+    setAssistantBusy(true);
+    try {
+      const result = await api.testAssistant();
+      setAssistantStatus(
+        result.ok
+          ? `${result.message}${result.models.length ? ` · ${result.models.slice(0, 2).join(", ")}` : ""}`
+          : result.message,
+      );
+      if (result.ok) notify("提示词助手连接成功", result.models[0]);
+      else fail(new Error(result.detail || result.message), "提示词助手连接失败");
+    } catch (error) {
+      fail(error, "提示词助手连接失败");
+    } finally {
+      setAssistantBusy(false);
+    }
   };
 
   const save = async () => {
@@ -387,6 +444,79 @@ export function SettingsPage() {
               </button>
             </div>
           </section>
+
+          <section className="settings-section">
+            <div className="settings-head">
+              <span className="settings-icon">
+                <Sparkles size={17} />
+              </span>
+              <div>
+                <h2>提示词助手（本地 LLM）</h2>
+                <p>连接 OpenAI 兼容的本地对话模型，把角色想法改写成 Danbooru 风格赛璐珞 tags。密钥只保存在本机。</p>
+              </div>
+            </div>
+            <div className="settings-form-grid">
+              <Field label="API 地址" hint="需包含 /v1">
+                <input
+                  className="input"
+                  value={assistant?.base_url ?? ""}
+                  onChange={(event) => updateAssistant({ base_url: event.target.value })}
+                  placeholder="http://127.0.0.1:8000/v1"
+                />
+              </Field>
+              <Field label="模型 ID">
+                <input
+                  className="input"
+                  value={assistant?.model ?? ""}
+                  onChange={(event) => updateAssistant({ model: event.target.value })}
+                  placeholder="your-local-model"
+                />
+              </Field>
+              <Field label="API Key" hint={assistant?.has_key ? `已保存 ${assistant.key_masked}` : "本地服务通常可留空"}>
+                <input
+                  className="input"
+                  type="password"
+                  value={assistantKey}
+                  onChange={(event) => setAssistantKey(event.target.value)}
+                  placeholder={assistant?.has_key ? "留空保持现有密钥" : "sk-…"}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field label="超时（秒）">
+                <input
+                  className="input"
+                  type="number"
+                  min={10}
+                  max={300}
+                  value={assistant?.timeout ?? 90}
+                  onChange={(event) => updateAssistant({ timeout: Number(event.target.value) })}
+                />
+              </Field>
+            </div>
+            <div className="settings-switches">
+              <div className="switch-row">
+                <div>
+                  <strong>启用提示词助手</strong>
+                  <span>创作台的「LLM 完善」会优先使用此模型</span>
+                </div>
+                <Toggle
+                  checked={Boolean(assistant?.enabled)}
+                  onChange={(value) => updateAssistant({ enabled: value })}
+                  label="启用提示词助手"
+                />
+              </div>
+            </div>
+            <div className="inline-actions">
+              <button className="button button-ghost button-small" onClick={() => void testAssistant()} disabled={assistantBusy}>
+                {assistantBusy ? <Loader2 size={13} className="spin" /> : <RefreshCw size={13} />}
+                测试连接
+              </button>
+              <button className="button button-primary button-small" onClick={() => void saveAssistant()} disabled={assistantBusy || !assistant}>
+                <Save size={13} /> 保存助手配置
+              </button>
+              {assistantStatus && <span className="assistant-status">{assistantStatus}</span>}
+            </div>
+          </section>
         </div>
 
         <aside className="settings-aside">
@@ -482,6 +612,19 @@ export function SettingsPage() {
               </li>
             </ul>
             <p>NPU 支持通过 ComfyUI 的 OpenVINO / DirectML 后端实现，属于实验性路径。</p>
+          </section>
+
+          <section className="hint-card warn-card">
+            <h3>
+              <AlertTriangle size={15} /> SmartScreen / 未签名构建
+            </h3>
+            <p>
+              如果 Windows 提示“无法识别的应用”，点「更多信息 → 仍要运行」。也可右键文件 → 属性 → 解除锁定，或查看
+              <a href="https://github.com/7ather-LX/lumen-studio/blob/main/docs/WINDOWS_SMARTSCREEN.md" target="_blank" rel="noreferrer">
+                这份说明
+              </a>
+              。自签名证书只适合本机测试，不能替代 CA 代码签名与 Microsoft 声誉。
+            </p>
           </section>
 
           <section className="hint-card warn-card">

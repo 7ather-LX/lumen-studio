@@ -37,6 +37,12 @@ DEFAULT_SETTINGS: dict[str, Any] = {
         "sampler": "dpmpp_2m",
         "scheduler": "karras",
     },
+    "assistant": {
+        "enabled": False,
+        "base_url": "http://127.0.0.1:8000/v1",
+        "model": "",
+        "timeout": 90,
+    },
     "privacy": {
         "strip_png_metadata": False,
         "keep_init_uploads": True,

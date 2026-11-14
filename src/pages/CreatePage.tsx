@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Trash2,
+  UserRound,
   Wand2,
   X,
   Zap,
@@ -26,7 +27,7 @@ import { Field, Segmented, Spinner, StarRating, Toggle } from "../components/Con
 import { computeSize } from "../lib/dimensions";
 import { cn, errorMessage, formatMs, formatVram, ratioLabel, truncate } from "../lib/utils";
 import { useStudio } from "../state/StudioContext";
-import type { GeneratePayload, Job, PageId, StudioImage } from "../types";
+import type { AssistantConfig, GeneratePayload, Job, PageId, StudioImage } from "../types";
 
 const EXAMPLES = [
   "雨夜的东京小巷，霓虹倒映在积水中，电影感广角镜头",
@@ -50,7 +51,7 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
   const [providerId, setProviderId] = useState("");
   const [model, setModel] = useState("");
   const [modelOptions, setModelOptions] = useState<string[]>([]);
-  const [style, setStyle] = useState("cinematic");
+  const [style, setStyle] = useState("anime-cel");
   const [aspect, setAspect] = useState("1:1");
   const [longEdge, setLongEdge] = useState(1024);
   const [steps, setSteps] = useState("");
@@ -61,7 +62,20 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
   const [batch, setBatch] = useState(1);
   const [autoTune, setAutoTune] = useState(true);
   const [enhancePrompt, setEnhancePrompt] = useState(false);
+  const [celShading, setCelShading] = useState(false);
   const [advanced, setAdvanced] = useState(false);
+  const [assistant, setAssistant] = useState<AssistantConfig | null>(null);
+  const [showCharacter, setShowCharacter] = useState(false);
+  const [character, setCharacter] = useState({
+    count: "1girl",
+    hair: "",
+    eyes: "",
+    outfit: "",
+    expression: "",
+    pose: "",
+    framing: "upper body",
+    background: "",
+  });
   const [initImage, setInitImage] = useState<InitImage | null>(null);
   const [dragging, setDragging] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -77,6 +91,13 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
 
   const enabledProviders = useMemo(() => providers.filter((provider) => provider.enabled), [providers]);
   const provider = enabledProviders.find((item) => item.id === providerId) ?? enabledProviders[0];
+
+  useEffect(() => {
+    void api
+      .assistant()
+      .then(setAssistant)
+      .catch(() => setAssistant(null));
+  }, []);
 
   useEffect(() => {
     if (!settings || appliedSettings.current) return;
@@ -261,14 +282,44 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
     }
     setPromptBusy(true);
     try {
-      const result = await api.enhancePrompt(prompt, style);
-      setPrompt(result.prompt);
-      notify("提示词已完善", result.learned_tokens.length ? `融入了 ${result.learned_tokens.length} 个学习片段` : undefined);
+      if (assistant?.enabled && assistant.model) {
+        const result = await api.assistantEnhance(prompt, style, mode);
+        setPrompt(result.prompt);
+        if (result.negative_prompt) setNegativePrompt(result.negative_prompt);
+        notify("本地 LLM 已改写提示词", `${result.model} · 已转换为赛璐珞动漫 tags`);
+      } else {
+        const result = await api.enhancePrompt(prompt, style);
+        setPrompt(result.prompt);
+        notify("提示词已完善", result.learned_tokens.length ? `融入了 ${result.learned_tokens.length} 个学习片段` : undefined);
+      }
     } catch (error) {
       fail(error, "完善提示词失败");
     } finally {
       setPromptBusy(false);
     }
+  };
+
+  const applyCharacter = () => {
+    const tags = [
+      character.count,
+      character.hair,
+      character.eyes,
+      character.outfit,
+      character.expression,
+      character.pose,
+      character.framing,
+      character.background,
+      "solo",
+      "cel shading",
+      "clean lineart",
+      "flat colors",
+    ]
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const next = [prompt.trim(), ...tags].filter(Boolean).join(", ");
+    setPrompt(next.slice(0, 3000));
+    setShowCharacter(false);
+    notify("角色设定已加入提示词", "可以继续手动修改，或让本地 LLM 再润色");
   };
 
   const submit = async () => {
@@ -304,6 +355,7 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
         style,
         auto_tune: autoTune,
         enhance_prompt: enhancePrompt,
+        cel_shading: celShading,
       };
       if (mode === "img2img" && initImage) {
         if (initImage.imageId) payload.init_image_id = initImage.imageId;
@@ -504,7 +556,7 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
           <div className="prompt-toolbar">
             <button className="prompt-enhance" onClick={() => void enhance()} disabled={promptBusy}>
               {promptBusy ? <Spinner size={13} /> : <Wand2 size={14} />}
-              帮我完善
+              {assistant?.enabled && assistant.model ? "LLM 完善" : "帮我完善"}
             </button>
             <span className="char-count">{prompt.length} / 3000</span>
           </div>
@@ -515,6 +567,101 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
               {truncate(example, 24)}
             </button>
           ))}
+        </div>
+
+        <div className="character-block">
+          <button className="character-toggle" onClick={() => setShowCharacter((value) => !value)}>
+            <span>
+              <UserRound size={14} />
+              动漫角色设定
+            </span>
+            <span className="character-hint">发型 / 眼睛 / 服装 / 表情 / 构图</span>
+            <ChevronDown size={14} className={cn("chevron", showCharacter && "open")} />
+          </button>
+          {showCharacter && (
+            <div className="character-panel">
+              <div className="character-grid">
+                <Field label="人数">
+                  <select
+                    className="input"
+                    value={character.count}
+                    onChange={(event) => setCharacter({ ...character, count: event.target.value })}
+                  >
+                    <option value="1girl">1girl</option>
+                    <option value="1boy">1boy</option>
+                    <option value="1other">1other</option>
+                    <option value="2girls">2girls</option>
+                  </select>
+                </Field>
+                <Field label="发型 / 发色">
+                  <input
+                    className="input"
+                    value={character.hair}
+                    onChange={(event) => setCharacter({ ...character, hair: event.target.value })}
+                    placeholder="silver long hair, twin tails"
+                  />
+                </Field>
+                <Field label="眼睛">
+                  <input
+                    className="input"
+                    value={character.eyes}
+                    onChange={(event) => setCharacter({ ...character, eyes: event.target.value })}
+                    placeholder="amber eyes, detailed eyes"
+                  />
+                </Field>
+                <Field label="服装">
+                  <input
+                    className="input"
+                    value={character.outfit}
+                    onChange={(event) => setCharacter({ ...character, outfit: event.target.value })}
+                    placeholder="black school uniform, red ribbon"
+                  />
+                </Field>
+                <Field label="表情">
+                  <input
+                    className="input"
+                    value={character.expression}
+                    onChange={(event) => setCharacter({ ...character, expression: event.target.value })}
+                    placeholder="gentle smile, confident"
+                  />
+                </Field>
+                <Field label="动作">
+                  <input
+                    className="input"
+                    value={character.pose}
+                    onChange={(event) => setCharacter({ ...character, pose: event.target.value })}
+                    placeholder="looking at viewer, hand on hip"
+                  />
+                </Field>
+                <Field label="景别">
+                  <select
+                    className="input"
+                    value={character.framing}
+                    onChange={(event) => setCharacter({ ...character, framing: event.target.value })}
+                  >
+                    <option value="portrait">portrait / 特写</option>
+                    <option value="upper body">upper body / 半身</option>
+                    <option value="cowboy shot">cowboy shot / 七分身</option>
+                    <option value="full body">full body / 全身</option>
+                  </select>
+                </Field>
+                <Field label="背景">
+                  <input
+                    className="input"
+                    value={character.background}
+                    onChange={(event) => setCharacter({ ...character, background: event.target.value })}
+                    placeholder="cherry blossoms, blue sky"
+                  />
+                </Field>
+              </div>
+              <div className="character-actions">
+                <span>会追加 booru 风格 tag 与赛璐珞质量词</span>
+                <button className="button button-small button-primary" onClick={applyCharacter}>
+                  <Sparkles size={13} /> 加入提示词
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="model-row">
@@ -757,6 +904,13 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
                     <span>补充构图、光线与细节描述</span>
                   </div>
                   <Toggle checked={enhancePrompt} onChange={setEnhancePrompt} label="提示词增强" />
+                </div>
+                <div className="switch-row">
+                  <div>
+                    <strong>赛璐珞线条增强</strong>
+                    <span>本地后处理：色阶压缩 + 墨线边缘，让平涂更像手绘动画</span>
+                  </div>
+                  <Toggle checked={celShading} onChange={setCelShading} label="赛璐珞线条增强" />
                 </div>
               </div>
             </div>

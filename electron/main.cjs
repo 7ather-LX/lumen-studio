@@ -239,9 +239,9 @@ async function createWindow() {
     frame: false,
     backgroundColor: "#0b0c10",
     title: APP_NAME,
-    icon: fs.existsSync(path.join(projectRoot(), "build", "icon.ico"))
-      ? path.join(projectRoot(), "build", "icon.ico")
-      : undefined,
+    icon: app.isPackaged
+      ? path.join(resourcesRoot(), "icon.ico")
+      : path.join(projectRoot(), "build", "icon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,

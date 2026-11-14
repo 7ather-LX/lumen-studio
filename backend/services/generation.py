@@ -256,6 +256,10 @@ class GenerationService:
             if cancelled():
                 raise EngineError("任务已取消", code="cancelled", status_code=409)
             progress(0.92 + index * 0.02, f"分析并保存 {index + 1}/{len(results)}")
+            if prepared.request.cel_shading:
+                from backend.utils.images import cel_shading_enhance
+
+                result.image = cel_shading_enhance(result.image)
             actual_width, actual_height = result.image.size
             params = {
                 "app_version": self.version,
@@ -269,6 +273,7 @@ class GenerationService:
                 "tuning": prepared.tuning,
                 "warnings": prepared.warnings,
                 "low_vram": prepared.low_vram,
+                "cel_shading": prepared.request.cel_shading,
                 "free_vram_mb": prepared.free_vram_mb,
                 "size_note": prepared.size_note,
                 "engine_meta": result.meta,

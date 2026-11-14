@@ -33,6 +33,27 @@ STYLE_PRESETS: list[dict[str, object]] = [
         "accent": "#c59bf5",
     },
     {
+        "id": "anime-cel",
+        "label": "赛璐珞",
+        "positive": "hand-drawn anime cel shading, bold clean lineart, flat colors, limited palette, soft cel shadows, expressive detailed eyes, 2D animation key visual, detailed background, masterpiece, best quality",
+        "negative": "3d render, cgi, photorealistic, realistic skin texture, painterly, blurry lineart, messy lines, extra fingers, bad hands, watermark, text, jpeg artifacts",
+        "accent": "#ff9f68",
+    },
+    {
+        "id": "anime-modern",
+        "label": "日系插画",
+        "positive": "modern Japanese anime illustration, crisp lineart, vibrant colors, detailed eyes, dynamic lighting, high quality key visual, clean composition",
+        "negative": "photorealistic, 3d render, muddy colors, lowres, bad anatomy",
+        "accent": "#f28cbd",
+    },
+    {
+        "id": "anime-sketch",
+        "label": "手绘线稿",
+        "positive": "hand-drawn anime sketch, expressive pencil linework, loose construction lines, monochrome, subtle paper texture, character design sheet",
+        "negative": "photorealistic, 3d render, full color, digital painting, blurry lines",
+        "accent": "#d7c7b8",
+    },
+    {
         "id": "anime",
         "label": "动画",
         "positive": "anime key visual, expressive linework, cel shading, vibrant colors, dynamic composition, detailed background",

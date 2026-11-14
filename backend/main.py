@@ -23,6 +23,7 @@ from backend.engines.diffusers_engine import LOCAL_MODEL_CATALOG
 from backend.engines.registry import KIND_LABELS
 from backend.schemas import CropRequest, FeedbackRequest, GenerateRequest, ImagePatch, ProviderUpsert, RuntimeInstallRequest
 from backend.security import SecretStore
+from backend.services.assistant import AssistantService
 from backend.services.generation import GenerationService
 from backend.services.image_store import ImageStore
 from backend.services.jobs import JobManager
@@ -55,6 +56,7 @@ class AppState:
         self.db = Database(self.data_dir)
         self.secrets = SecretStore(self.data_dir)
         self.learning = LearningService(self.db, self.data_dir, self.settings)
+        self.assistant = AssistantService(self.settings, self.secrets)
         self.images = ImageStore(self.db, self.data_dir, self.settings, self.learning)
         self.providers = ProviderService(self.db, self.secrets)
         self.runtime = RuntimeService(self.db, self.settings, self.secrets, self.data_dir)
@@ -284,6 +286,7 @@ def create_app(data_dir: Path | str | None = None, token: str | None = None) -> 
             "max_batch",
             "local_engine",
             "comfyui",
+            "assistant",
             "privacy",
             "ui",
         }
@@ -510,6 +513,29 @@ def create_app(data_dir: Path | str | None = None, token: str | None = None) -> 
     async def reset_learning() -> dict[str, Any]:
         state.learning.reset()
         return {"ok": True}
+
+    @app.get("/api/assistant")
+    async def assistant_config() -> dict[str, Any]:
+        return state.assistant.config()
+
+    @app.put("/api/assistant")
+    async def update_assistant(payload: dict[str, Any]) -> dict[str, Any]:
+        return state.assistant.update(payload)
+
+    @app.post("/api/assistant/test")
+    async def test_assistant() -> dict[str, Any]:
+        return state.assistant.test()
+
+    @app.post("/api/assistant/enhance")
+    async def assistant_enhance(payload: dict[str, Any]) -> dict[str, Any]:
+        prompt = str(payload.get("prompt") or "").strip()
+        if not prompt:
+            raise HTTPException(status_code=422, detail="提示词不能为空")
+        return state.assistant.enhance(
+            prompt,
+            str(payload.get("style") or "anime-cel"),
+            str(payload.get("mode") or "txt2img"),
+        )
 
     @app.post("/api/prompt/enhance")
     async def enhance_prompt(payload: dict[str, Any]) -> dict[str, Any]:

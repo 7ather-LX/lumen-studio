@@ -1,0 +1,35 @@
+Lumen Studio — Windows SmartScreen 说明
+======================================
+
+如果 Windows 提示：
+  “Microsoft Defender SmartScreen 阻止了无法识别的应用启动”
+
+这是发布者声誉提示，不代表安装包一定有问题。继续运行：
+
+1. 点击提示框中的「更多信息 / More info」
+2. 点击「仍要运行 / Run anyway」
+
+如果提示框没有「仍要运行」：
+- 右键安装包/主程序 → 属性 → 底部「解除锁定」→ 应用
+- 或者在 PowerShell 执行：
+  Unblock-File "文件路径"
+
+备用启动器：
+- 安装包旁的 Launch Lumen Studio.cmd 可绕过资源管理器的外壳检查。
+- 桌面快捷方式「Lumen Studio (备用启动)」同理。
+
+最后手段（不推荐长期开启）：
+Windows 安全中心 → 应用和浏览器控制 → 基于声誉的保护
+→ 临时关闭「检查应用和文件」→ 安装/运行 → 重新打开。
+
+为什么自签名证书仍会提示：
+SmartScreen 依据 Microsoft 的发布者声誉，而不是“本机是否信任证书”。
+自签名证书只能保证文件未被修改；只有 CA 签发的 OV/EV 代码签名证书
+并积累声誉后，才能稳定消除提示。
+
+校验：
+  Get-FileHash "Lumen-Studio-Setup-0.1.1.exe" -Algorithm SHA256
+并与 Release 页面的 SHA256SUMS.txt 对比。
+
+完整说明：
+https://github.com/7ather-LX/lumen-studio/blob/main/docs/WINDOWS_SMARTSCREEN.md

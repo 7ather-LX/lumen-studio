@@ -4,19 +4,23 @@
 
 Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负责生成与图像分析，数据完全保存在本地。它不绑定某一个模型，也不要求把图片上传到任何服务器。
 
-![本地 SD-Turbo 生成](docs/screenshots/local-result.png)
+![赛璐珞动漫角色生成](docs/screenshots/anime-result.png)
 
 | 作品库 | 模型与显存 |
 | --- | --- |
 | ![作品库](docs/screenshots/gallery.png) | ![模型](docs/screenshots/models.png) |
 
-| 本地学习 | 作品详情 |
+| 本地学习 | 设置 |
 | --- | --- |
-| ![学习](docs/screenshots/learning.png) | ![详情](docs/screenshots/detail.png) |
+| ![学习](docs/screenshots/learning.png) | ![设置](docs/screenshots/settings.png) |
 
-| 裁切 | 裁切结果 |
+| 动漫角色 + 本地 LLM | 裁切 |
 | --- | --- |
-| ![裁切](docs/screenshots/crop.png) | ![裁切结果](docs/screenshots/crop-result.png) |
+| ![动漫](docs/screenshots/anime-result.png) | ![裁切](docs/screenshots/crop.png) |
+
+| 作品详情 | 裁切结果 |
+| --- | --- |
+| ![详情](docs/screenshots/detail.png) | ![裁切结果](docs/screenshots/crop-result.png) |
 
 ## 目录
 
@@ -44,6 +48,7 @@ Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负
 - **低显存友好**：为“显卡上还跑着别的 AI”这一常见场景设计。监控空闲显存，自动启用顺序 CPU 卸载、VAE 分块与生成后释放。
 - **会学习**：你的星级与收藏会训练一个本地偏好模型，自动调整步数、CFG、采样器，并从高分提示词中提取偏好片段。不是黑盒“AI 优化”。
 - **可发布**：一条 `npm run dist` 生成 NSIS 安装包，自动创建桌面快捷方式与卸载入口，GitHub Actions 可直接出 Release。
+- **图标也是生成的**：桌面图标由本地 SD-Turbo 图生图生成，保持深色 + 青柠光圈视觉；见 [ICON.md](docs/ICON.md)。
 
 ## 功能
 
@@ -52,9 +57,12 @@ Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负
 - 文生图 / 图生图，支持拖拽参考图
 - 长宽比预设：1:1、4:3、3:4、3:2、2:3、16:9、9:16、21:9，自定义长边 512–2048
 - 支持精确像素、步数、CFG、种子、采样器、批量 1–4 张
-- 12 种风格预设；可选用“提示词增强”
+- 15 种风格预设（含赛璐珞 / 日系插画 / 手绘线稿）；可选用“提示词增强”
+- 动漫角色构建器：人数、发型、眼睛、服装、表情、动作、景别、背景
+- 可选赛璐珞线条增强后处理
 - 生成进度、取消、批量缩略图、收藏、下载、复用参数、以图生图
 - 作品操作：裁切、继续生成、评分、笔记、定位原文件、删除文件
+- SmartScreen 指引：安装包旁 `SMARTSCREEN.txt` 与 [说明文档](docs/WINDOWS_SMARTSCREEN.md)
 
 ### 模型引擎
 
@@ -65,6 +73,12 @@ Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负
 | OpenAI Images | `gpt-image-1` / DALL·E，或任意 OpenAI 兼容图片端点 | 是 |
 | Stability AI | SD 3.5 / Core API，支持文生图与图生图 | 是 |
 | 离线示例 | 无需模型，生成算法抽象画，用于预览与测试工作流 | 否 |
+
+### 动漫与本地 LLM
+
+- 面向手绘赛璐珞动漫角色；风格、角色构建器与负向词均针对动漫优化
+- 接入 OpenAI 兼容本地 LLM（如 `http://127.0.0.1:8000/v1`），把中文角色想法改写为 Danbooru 风格英文 tags
+- 详细工作流：[ANIME.md](docs/ANIME.md)
 
 ### 学习
 
@@ -109,7 +123,7 @@ Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负
 
 卸载：Windows「设置 → 应用」或开始菜单中的卸载入口。默认**保留**作品与设置；如需彻底清除，手动删除 `%APPDATA%\Lumen Studio`。
 
-> 未签名的开源安装包可能触发 Windows SmartScreen。请核对 Release 的 SHA-256，或按 [BUILD.md](docs/BUILD.md) 自行构建并签名。
+> 本构建已用本机自签名证书签名，但 Windows SmartScreen 仍可能提示“无法识别的应用”。点「更多信息 → 仍要运行」即可。完整说明见 [WINDOWS_SMARTSCREEN.md](docs/WINDOWS_SMARTSCREEN.md)。自签名证书不等同于 CA 发布者信誉；正式公开分发建议购买 OV/EV 代码签名证书。
 
 ### 方式二：从源码运行
 
@@ -249,7 +263,7 @@ npm run smoke
 
 ```powershell
 npm run dist
-# 产物：release\Lumen-Studio-Setup-0.1.0.exe
+# 产物：release\Lumen-Studio-Setup-0.1.1.exe
 ```
 
 安装包行为：
@@ -276,8 +290,8 @@ GitHub Actions 工作流在 Windows runner 上自动运行测试、构建运行�
 
 - 安装包只提供 Windows x64；macOS/Linux 需要自行调整打包配置。
 - 没有内置 LoRA 训练 / 模型微调。学习是偏好排序，不是权重训练。
-- 未签名构建可能触发 SmartScreen。
-- 自动更新当前为 GitHub Releases + `latest.yml`；未签名构建关闭了 Windows 更新签名校验。正式分发前请配置代码签名，并在 `build.win` 中把 `verifyUpdateCodeSignature` 改回 `true`。
+- 自签名构建仍可能触发 SmartScreen；这是发布者声誉问题，不是代码完整性失败。详见 [WINDOWS_SMARTSCREEN.md](docs/WINDOWS_SMARTSCREEN.md)。
+- 自动更新当前为 GitHub Releases + `latest.yml`；自签名构建暂时关闭了 Windows 更新签名校验。正式分发前建议购买 CA 证书，并在 `build.win` 中把 `verifyUpdateCodeSignature` 改回 `true`。
 - 云端供应商的尺寸会被映射到其支持的最接近规格，结果页会标注实际尺寸。
 - NPU 需要外部 ComfyUI/OpenVINO，内置 Diffusers 不直接使用 NPU。
 - 生成是单队列串行执行，避免多个任务同时抢显存；批量图在任务内串行生成。

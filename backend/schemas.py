@@ -42,6 +42,7 @@ class GenerateRequest(BaseModel):
     init_image: str | None = None
     auto_tune: bool = True
     enhance_prompt: bool = False
+    cel_shading: bool = False
 
 
 class FeedbackRequest(BaseModel):
