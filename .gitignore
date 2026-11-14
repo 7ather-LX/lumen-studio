@@ -7,6 +7,7 @@ build/smoke-app/
 build/smoke.png
 build/ui*.png
 build/demo*.png
+build/local-sd.png
 build/eout.txt
 build/eerr.txt
 build/get-pip.py
@@ -25,6 +26,8 @@ pytest-of-*/
 .runtime-test/
 .packaged-test/
 .hf-test/
+.models/
+.cuda/
 .secret-test/
 .testdata2/
 .edgeprofile*/

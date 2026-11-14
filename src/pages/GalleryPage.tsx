@@ -428,26 +428,53 @@ function ImageDetail({
                 {image.width} × {image.height}
               </strong>
             </div>
-            <div>
-              <span>步数</span>
-              <strong>{image.steps}</strong>
-            </div>
-            <div>
-              <span>CFG</span>
-              <strong>{image.guidance}</strong>
-            </div>
-            <div>
-              <span>种子</span>
-              <strong className="mono">{image.seed}</strong>
-            </div>
-            <div>
-              <span>耗时</span>
-              <strong>{formatMs(image.generation_ms)}</strong>
-            </div>
-            <div>
-              <span>引擎</span>
-              <strong>{image.provider_name}</strong>
-            </div>
+            {image.mode === "crop" ? (
+              <>
+                <div>
+                  <span>操作</span>
+                  <strong>裁切</strong>
+                </div>
+                <div>
+                  <span>宽高比</span>
+                  <strong>{ratioLabel(image.width, image.height)}</strong>
+                </div>
+                <div>
+                  <span>来源图</span>
+                  <strong className="mono">{image.init_image_id?.slice(0, 10) ?? "—"}</strong>
+                </div>
+                <div>
+                  <span>耗时</span>
+                  <strong>—</strong>
+                </div>
+                <div>
+                  <span>引擎</span>
+                  <strong>{image.provider_name}</strong>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <span>步数</span>
+                  <strong>{image.steps}</strong>
+                </div>
+                <div>
+                  <span>CFG</span>
+                  <strong>{image.guidance}</strong>
+                </div>
+                <div>
+                  <span>种子</span>
+                  <strong className="mono">{image.seed}</strong>
+                </div>
+                <div>
+                  <span>耗时</span>
+                  <strong>{formatMs(image.generation_ms)}</strong>
+                </div>
+                <div>
+                  <span>引擎</span>
+                  <strong>{image.provider_name}</strong>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="analysis-block">

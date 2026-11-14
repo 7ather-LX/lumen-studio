@@ -23,6 +23,7 @@ let backendLog = null;
 let backendStarting = null;
 let isQuitting = false;
 let boundsFile = null;
+let updater = null;
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -310,6 +311,35 @@ async function runSmokeCapture() {
   }
 }
 
+function sendUpdate(status, payload = {}) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("updates:status", { status, ...payload });
+  }
+}
+
+function ensureUpdater() {
+  if (!app.isPackaged) return null;
+  if (updater) return updater;
+  try {
+    const { autoUpdater } = require("electron-updater");
+    updater = autoUpdater;
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.on("checking-for-update", () => sendUpdate("checking"));
+    autoUpdater.on("update-available", (info) => sendUpdate("available", { version: info.version }));
+    autoUpdater.on("update-not-available", (info) => sendUpdate("not-available", { version: info.version }));
+    autoUpdater.on("download-progress", (progress) =>
+      sendUpdate("downloading", { progress: Math.round(progress.percent), transferred: progress.transferred, total: progress.total }),
+    );
+    autoUpdater.on("update-downloaded", (info) => sendUpdate("downloaded", { version: info.version }));
+    autoUpdater.on("error", (error) => sendUpdate("error", { message: error?.message || String(error) }));
+    return updater;
+  } catch (error) {
+    backendLog?.write(`updater unavailable: ${error?.message || error}\n`);
+    return null;
+  }
+}
+
 function registerIpc() {
   ipcMain.handle("runtime:get", () => ({
     api: backendPort ? `http://127.0.0.1:${backendPort}` : null,
@@ -372,6 +402,33 @@ function registerIpc() {
     } catch (error) {
       throw new Error(error?.message || String(error));
     }
+  });
+
+  ipcMain.handle("updates:check", async () => {
+    const instance = ensureUpdater();
+    if (!instance) return { ok: false, message: "自动更新仅在安装版中可用" };
+    try {
+      const result = await instance.checkForUpdates();
+      return { ok: true, version: result?.updateInfo?.version || null };
+    } catch (error) {
+      return { ok: false, message: error?.message || String(error) };
+    }
+  });
+  ipcMain.handle("updates:download", async () => {
+    const instance = ensureUpdater();
+    if (!instance) return { ok: false, message: "自动更新仅在安装版中可用" };
+    try {
+      await instance.downloadUpdate();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: error?.message || String(error) };
+    }
+  });
+  ipcMain.handle("updates:install", () => {
+    const instance = ensureUpdater();
+    if (!instance) return { ok: false, message: "自动更新仅在安装版中可用" };
+    setImmediate(() => instance.quitAndInstall(false, true));
+    return { ok: true };
   });
 
   ipcMain.handle("window:minimize", () => mainWindow?.minimize());

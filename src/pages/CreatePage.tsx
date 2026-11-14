@@ -111,7 +111,7 @@ export function CreatePage({ active, onNavigate }: { active: boolean; onNavigate
     if (!provider) return;
     const fallback =
       provider.kind === "diffusers"
-        ? settings?.local_engine.model || provider.model || "stabilityai/sd-turbo"
+        ? provider.model || settings?.local_engine.model || "stabilityai/sd-turbo"
         : provider.model;
     setModel((current) => (current && providerId ? current : fallback || ""));
     const catalog = provider.model_catalog?.map((item) => item.id) ?? [];

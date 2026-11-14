@@ -4298,6 +4298,45 @@ input[type="range"]::-webkit-slider-thumb {
   width: 100%;
 }
 
+.update-block {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  text-align: left;
+}
+
+.update-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.update-copy span {
+  color: var(--dim);
+  font-size: 8.5px;
+}
+
+.update-copy strong {
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 400;
+}
+
+.update-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.update-actions .button {
+  width: 100%;
+}
+
+.update-progress {
+  margin-top: 7px;
+}
+
 .hint-card {
   padding: 14px 15px;
   border: 1px solid var(--line-soft);

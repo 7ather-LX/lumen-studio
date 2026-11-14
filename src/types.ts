@@ -381,6 +381,15 @@ export interface Settings {
   ui: { reduce_motion: boolean; gallery_columns: number };
 }
 
+export interface UpdateEvent {
+  status: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";
+  version?: string;
+  progress?: number;
+  transferred?: number;
+  total?: number;
+  message?: string;
+}
+
 export interface RuntimeConfig {
   api: string;
   token: string;

@@ -7,6 +7,7 @@ import {
   Info,
   Loader2,
   Lock,
+  Power,
   RefreshCw,
   Save,
   ShieldCheck,
@@ -16,7 +17,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { Field, Toggle } from "../components/Controls";
 import { useStudio } from "../state/StudioContext";
-import type { Settings } from "../types";
+import type { Settings, UpdateEvent } from "../types";
 
 export function SettingsPage() {
   const { config, settings, providers, runtime, refreshSettings, notify, fail } = useStudio();
@@ -24,6 +25,13 @@ export function SettingsPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [updateEvent, setUpdateEvent] = useState<UpdateEvent | null>(null);
+  const [updateBusy, setUpdateBusy] = useState(false);
+
+  useEffect(() => {
+    if (!window.lumen) return;
+    return window.lumen.onUpdateStatus(setUpdateEvent);
+  }, []);
 
   useEffect(() => {
     if (settings && (!form || !dirty)) setForm(settings);
@@ -53,6 +61,44 @@ export function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const checkUpdates = async () => {
+    if (!window.lumen) return;
+    setUpdateBusy(true);
+    setUpdateEvent({ status: "checking" });
+    try {
+      const result = await window.lumen.checkForUpdates();
+      if (!result.ok) {
+        setUpdateEvent({ status: "error", message: result.message });
+        fail(new Error(result.message || "检查更新失败"), "检查更新失败");
+      } else if (!result.version) {
+        notify("已是最新版本");
+      }
+    } catch (error) {
+      setUpdateEvent({ status: "error", message: error instanceof Error ? error.message : String(error) });
+      fail(error, "检查更新失败");
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
+
+  const downloadUpdate = async () => {
+    if (!window.lumen) return;
+    setUpdateBusy(true);
+    try {
+      const result = await window.lumen.downloadUpdate();
+      if (!result.ok) fail(new Error(result.message || "下载更新失败"), "下载失败");
+    } catch (error) {
+      fail(error, "下载更新失败");
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
+
+  const installUpdate = async () => {
+    if (!window.lumen) return;
+    await window.lumen.installUpdate();
   };
 
   const restart = async () => {
@@ -370,6 +416,51 @@ export function SettingsPage() {
             <a className="button button-ghost button-small" href="https://github.com/7ather-LX/lumen-studio" target="_blank" rel="noreferrer">
               <ExternalLink size={14} /> 项目主页
             </a>
+            <div className="update-block">
+              <div className="update-copy">
+                <span>自动更新</span>
+                <strong>
+                  {!window.lumen
+                    ? "仅安装版可用"
+                    : updateEvent?.status === "checking"
+                      ? "正在检查…"
+                      : updateEvent?.status === "available"
+                        ? `v${updateEvent.version} 可用`
+                        : updateEvent?.status === "downloading"
+                          ? `下载中 ${updateEvent.progress ?? 0}%`
+                          : updateEvent?.status === "downloaded"
+                            ? "已下载，等待重启"
+                            : updateEvent?.status === "error"
+                              ? "检查失败"
+                              : "点击检查新版本"}
+                </strong>
+              </div>
+              <div className="update-actions">
+                {updateEvent?.status === "available" ? (
+                  <button className="button button-small button-primary" onClick={() => void downloadUpdate()} disabled={updateBusy}>
+                    <Download size={13} /> 下载
+                  </button>
+                ) : updateEvent?.status === "downloaded" ? (
+                  <button className="button button-small button-primary" onClick={() => void installUpdate()}>
+                    <Power size={13} /> 重启安装
+                  </button>
+                ) : (
+                  <button
+                    className="button button-small button-ghost"
+                    onClick={() => void checkUpdates()}
+                    disabled={updateBusy || !window.lumen}
+                  >
+                    {updateBusy ? <Loader2 size={13} className="spin" /> : <RefreshCw size={13} />}
+                    检查
+                  </button>
+                )}
+              </div>
+              {updateEvent?.status === "downloading" && (
+                <div className="progress-track update-progress">
+                  <span style={{ width: `${Math.max(2, updateEvent.progress ?? 0)}%` }} />
+                </div>
+              )}
+            </div>
           </section>
 
           <section className="hint-card">

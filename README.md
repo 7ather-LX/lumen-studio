@@ -4,7 +4,7 @@
 
 Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负责生成与图像分析，数据完全保存在本地。它不绑定某一个模型，也不要求把图片上传到任何服务器。
 
-![创作台](docs/screenshots/create.png)
+![本地 SD-Turbo 生成](docs/screenshots/local-result.png)
 
 | 作品库 | 模型与显存 |
 | --- | --- |
@@ -13,6 +13,10 @@ Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负
 | 本地学习 | 作品详情 |
 | --- | --- |
 | ![学习](docs/screenshots/learning.png) | ![详情](docs/screenshots/detail.png) |
+
+| 裁切 | 裁切结果 |
+| --- | --- |
+| ![裁切](docs/screenshots/crop.png) | ![裁切结果](docs/screenshots/crop-result.png) |
 
 ## 目录
 
@@ -50,6 +54,7 @@ Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负
 - 支持精确像素、步数、CFG、种子、采样器、批量 1–4 张
 - 12 种风格预设；可选用“提示词增强”
 - 生成进度、取消、批量缩略图、收藏、下载、复用参数、以图生图
+- 作品操作：裁切、继续生成、评分、笔记、定位原文件、删除文件
 
 ### 模型引擎
 
@@ -97,7 +102,7 @@ Lumen Studio 是一个 Windows 桌面应用：Electron 负责界面，Python 负
 
 ### 方式一：安装包（推荐给普通用户）
 
-1. 从 GitHub Releases 下载 `Lumen-Studio-Setup-x.y.z.exe`。
+1. 从 [GitHub Releases](https://github.com/7ather-LX/lumen-studio/releases) 下载 `Lumen-Studio-Setup-x.y.z.exe`。
 2. 双击安装。安装器为当前用户安装，自动创建**桌面快捷方式**和开始菜单项。
 3. 首次启动如需真实本地生成，在「模型」页点击 **安装本地引擎**。这会下载 PyTorch + Diffusers（CUDA 约 3–6 GB，CPU 约 1.5 GB），安装到应用自己的 Python 运行时，不会污染系统 Python。
 4. 选择一个模型。首次生成时会从 Hugging Face（或你配置的镜像）下载权重。
@@ -216,7 +221,7 @@ docs/                    architecture, providers, hardware, build
 ### 测试
 
 ```powershell
-# 后端 13 个测试（生成、反馈、学习、鉴权、尺寸、分析）
+# 后端 14 个测试（生成、裁切、反馈、学习、鉴权、尺寸、分析）
 npm run test:backend
 
 # TypeScript / Vite
@@ -272,6 +277,7 @@ GitHub Actions 工作流在 Windows runner 上自动运行测试、构建运行�
 - 安装包只提供 Windows x64；macOS/Linux 需要自行调整打包配置。
 - 没有内置 LoRA 训练 / 模型微调。学习是偏好排序，不是权重训练。
 - 未签名构建可能触发 SmartScreen。
+- 自动更新当前为 GitHub Releases + `latest.yml`；未签名构建关闭了 Windows 更新签名校验。正式分发前请配置代码签名，并在 `build.win` 中把 `verifyUpdateCodeSignature` 改回 `true`。
 - 云端供应商的尺寸会被映射到其支持的最接近规格，结果页会标注实际尺寸。
 - NPU 需要外部 ComfyUI/OpenVINO，内置 Diffusers 不直接使用 NPU。
 - 生成是单队列串行执行，避免多个任务同时抢显存；批量图在任务内串行生成。
@@ -284,7 +290,8 @@ GitHub Actions 工作流在 Windows runner 上自动运行测试、构建运行�
 - [ ] macOS（MPS）与 Linux 打包
 - [ ] 局部重绘 / 扩图 / 背景移除
 - [ ] 多用户偏好档案
-- [ ] 代码签名与自动更新
+- [x] GitHub 自动更新检查（设置页手动触发；未签名构建关闭了签名校验，正式发布建议开启代码签名）
+- [ ] 代码签名证书
 
 ## 许可证
 

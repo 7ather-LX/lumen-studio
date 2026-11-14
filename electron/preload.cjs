@@ -8,6 +8,14 @@ contextBridge.exposeInMainWorld("lumen", {
   openPath: (target) => ipcRenderer.invoke("path:open", target),
   showInFolder: (target) => ipcRenderer.invoke("path:show", target),
   restartBackend: () => ipcRenderer.invoke("app:restart-backend"),
+  checkForUpdates: () => ipcRenderer.invoke("updates:check"),
+  downloadUpdate: () => ipcRenderer.invoke("updates:download"),
+  installUpdate: () => ipcRenderer.invoke("updates:install"),
+  onUpdateStatus: (callback) => {
+    const listener = (_event, value) => callback(value);
+    ipcRenderer.on("updates:status", listener);
+    return () => ipcRenderer.removeListener("updates:status", listener);
+  },
   minimize: () => ipcRenderer.invoke("window:minimize"),
   toggleMaximize: () => ipcRenderer.invoke("window:toggle-maximize"),
   close: () => ipcRenderer.invoke("window:close"),

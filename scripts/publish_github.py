@@ -67,16 +67,27 @@ def main() -> int:
     if not staged:
         print("nothing to commit")
     else:
+        message = os.environ.get(
+            "COMMIT_MESSAGE",
+            "feat: Lumen Studio 0.1.0 local-first AI image studio",
+        ).encode()
         commit = porcelain.commit(
             repo,
-            message=b"feat: Lumen Studio 0.1.0 local-first AI image studio",
+            message=message,
             author=f"{NAME} <{EMAIL}>".encode(),
             committer=f"{NAME} <{EMAIL}>".encode(),
         )
         print("commit", commit.decode())
     url = f"https://x-access-token:{token}@github.com/{OWNER}/{REPO}.git"
     print("pushing main ...")
-    porcelain.push(repo, url, refspecs=[b"refs/heads/main:refs/heads/main"])
+    with open(os.devnull, "wb") as quiet:
+        porcelain.push(
+            repo,
+            url,
+            refspecs=[b"refs/heads/main:refs/heads/main"],
+            outstream=quiet,
+            errstream=quiet,
+        )
     print("pushed")
     return 0
 

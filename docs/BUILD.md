@@ -64,6 +64,15 @@ electron-builder 的 NSIS 配置：
 
 卸载入口会出现在 Windows「设置 → 应用」和开始菜单。
 
+## 自动更新
+
+应用使用 `electron-updater` + GitHub Releases：
+
+- `publish` 配置指向 GitHub 仓库；electron-builder 生成 `latest.yml`。
+- 设置页「自动更新」可手动检查；发现新版本后下载并在重启时安装。
+- Release 必须同时上传 `Lumen-Studio-Setup-x.y.z.exe`、`latest.yml` 和 `.blockmap`。
+- 当前未签名构建在 `build.win.verifyUpdateCodeSignature` 中设为 `false`。这是为了让未签名构建也能验证更新流程；正式分发前应配置签名并改回 `true`。
+
 ## 代码签名
 
 未签名安装包会触发 SmartScreen。正式发布建议购买代码签名证书，并在构建环境设置：
